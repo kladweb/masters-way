@@ -1,0 +1,15 @@
+.openapi-generator-ignore
+apis/RoomApi.ts
+apis/index.ts
+index.ts
+models/SchemasCreateMessagePayload.ts
+models/SchemasCreateRoomPayload.ts
+models/SchemasGetChatPreviewResponse.ts
+models/SchemasGetRoomsResponse.ts
+models/SchemasMessageReaders.ts
+models/SchemasMessageResponse.ts
+models/SchemasRoomPopulatedResponse.ts
+models/SchemasRoomPreviewResponse.ts
+models/SchemasUserResponse.ts
+models/index.ts
+runtime.ts

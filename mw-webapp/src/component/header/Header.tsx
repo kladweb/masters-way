@@ -1,5 +1,7 @@
+import clsx from "clsx";
 import {headerAccessIds} from "cypress/accessIds/headerAccessIds";
 import {navigationMenuIds} from "cypress/accessIds/navigationMenuAccessIds";
+import {observer} from "mobx-react-lite";
 import {TrackHeader} from "src/analytics/headerAnalytics";
 import google from "src/assets/google.svg";
 import logo from "src/assets/mastersWayLogo.svg";
@@ -37,7 +39,23 @@ export const languageOptions: SelectItemType<Language>[] = [
 ];
 
 /**
- * Checkbox props
+ * Header type
+ */
+export enum HeaderType {
+
+  /**
+   * Header for thematic pages
+   */
+  PRIMARY = "primary",
+
+  /**
+   * Header for non-thematic pages
+   */
+  SECONDARY = "secondary",
+}
+
+/**
+ * Header props
  */
 interface HeaderProps {
 
@@ -76,12 +94,18 @@ interface HeaderProps {
    */
   setTheme: (theme: Theme) => void;
 
+  /**
+   * Header type
+   * @default {@link HeaderType.PRIMARY}
+   */
+  type: HeaderType;
+
 }
 
 /**
  * Header component
  */
-export const Header = (props: HeaderProps) => {
+export const Header = observer((props: HeaderProps) => {
   const menuItems: (MenuItemLink)[] = [
     {
       path: pages.home.getPath({}),
@@ -186,28 +210,40 @@ export const Header = (props: HeaderProps) => {
         dataCy={headerAccessIds.logo}
         onClick={TrackHeader.trackLogoClick}
       >
-        <ThemedImage
-          className={styles.logo}
-          sources={getMapThemeSources({
-            [Theme.DARK]: logoLight,
-            [Theme.LIGHT]: logo,
-          })}
-          theme={props.theme}
-          name={LOGO_TEXT}
-        />
+        {props.type === HeaderType.PRIMARY
+          ? (
+            <ThemedImage
+              className={styles.logo}
+              sources={getMapThemeSources({
+                [Theme.DARK]: logoLight,
+                [Theme.LIGHT]: logo,
+              })}
+              theme={props.theme}
+              name={LOGO_TEXT}
+            />
+          )
+          : (
+            <Image
+              alt="Logo image"
+              src={logoLight}
+              className={styles.logo}
+            />
+          )}
       </Link>
       <HorizontalContainer className={styles.headerButtonsContainer}>
         <HorizontalContainer className={styles.headerThemeLanguageBlock}>
-          <ThemeSwitcher
-            language={props.language}
-            theme={props.theme}
-            onClick={(theme: Theme) => {
-              TrackHeader.trackThemeClick();
-              props.setTheme(theme);
-            }}
-            className={styles.themeSwitcher}
-            dataCy={headerAccessIds.settings.themeSwitcher}
-          />
+          {props.type === HeaderType.PRIMARY && (
+            <ThemeSwitcher
+              language={props.language}
+              theme={props.theme}
+              onClick={(theme: Theme) => {
+                TrackHeader.trackThemeClick();
+                props.setTheme(theme);
+              }}
+              className={styles.themeSwitcher}
+              dataCy={headerAccessIds.settings.themeSwitcher}
+            />
+          )}
 
           <Select
             value={props.language}
@@ -247,11 +283,11 @@ export const Header = (props: HeaderProps) => {
                 <Button
                   onClick={TrackHeader.trackLoginClick}
                   value={LanguageService.header.loginButton[props.language]}
-                  buttonType={ButtonType.PRIMARY}
+                  buttonType={props.type === HeaderType.PRIMARY ? ButtonType.PRIMARY : ButtonType.EXTRA_ORDINARY_BUTTON}
                   dataCy={headerAccessIds.loginButton}
                 />
               }
-              className={styles.loginModal}
+              contentClassName={styles.loginModal}
               content={
                 <HorizontalContainer className={styles.loginContainer}>
                   <Image
@@ -298,7 +334,10 @@ export const Header = (props: HeaderProps) => {
               <Icon
                 size={IconSize.SMALL}
                 name="BurgerMenuIcon"
-                className={styles.burgerMenu}
+                className={clsx(
+                  styles.burgerMenu,
+                  props.type === HeaderType.SECONDARY && styles.secondaryBurgerMenu,
+                )}
                 dataCy={headerAccessIds.burgerMenu}
               />
             }
@@ -419,4 +458,4 @@ export const Header = (props: HeaderProps) => {
       </HorizontalContainer>
     </header>
   );
-};
+});

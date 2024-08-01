@@ -13,6 +13,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 
 	"github.com/samber/lo"
 )
@@ -45,31 +46,30 @@ func (cc *UserController) UpdateUser(ctx *gin.Context) {
 		return
 	}
 
-	var description, imageUrl, name sql.NullString
-	var mentor sql.NullBool
+	var description, imageUrl, name pgtype.Text
+	var isMentor pgtype.Bool
 	if payload.Description != nil {
-		description = sql.NullString{String: *payload.Description, Valid: true}
+		description = pgtype.Text{String: *payload.Description, Valid: true}
 	}
 	if payload.ImageUrl != nil {
-		imageUrl = sql.NullString{String: *payload.ImageUrl, Valid: true}
+		imageUrl = pgtype.Text{String: *payload.ImageUrl, Valid: true}
 	}
 	if payload.Name != nil {
-		name = sql.NullString{String: *payload.Name, Valid: true}
+		name = pgtype.Text{String: *payload.Name, Valid: true}
 	}
 	if payload.IsMentor != nil {
-		mentor = sql.NullBool{Bool: *payload.IsMentor, Valid: true}
+		isMentor = pgtype.Bool{Bool: *payload.IsMentor, Valid: true}
 	}
 
-	args := &db.UpdateUserParams{
-		Uuid:        uuid.MustParse(userId),
+	params := db.UpdateUserParams{
+		Uuid:        pgtype.UUID{Bytes: uuid.MustParse(userId), Valid: true},
 		Name:        name,
 		Description: description,
 		ImageUrl:    imageUrl,
-		IsMentor:    mentor,
+		IsMentor:    isMentor,
 	}
 
-	user, err := cc.db.UpdateUser(ctx, *args)
-
+	user, err := cc.db.UpdateUser(ctx, params)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			ctx.JSON(http.StatusNotFound, gin.H{"error": "Failed to retrieve user with this ID"})
@@ -80,11 +80,11 @@ func (cc *UserController) UpdateUser(ctx *gin.Context) {
 	}
 
 	response := schemas.UserPlainResponse{
-		Uuid:        user.Uuid.String(),
+		Uuid:        util.ConvertPgUUIDToUUID(user.Uuid).String(),
 		Name:        user.Name,
 		Email:       user.Email,
 		Description: user.Description,
-		CreatedAt:   user.CreatedAt.Format(util.DEFAULT_STRING_LAYOUT),
+		CreatedAt:   user.CreatedAt.Time.Format(util.DEFAULT_STRING_LAYOUT),
 		ImageUrl:    user.ImageUrl,
 		IsMentor:    user.IsMentor,
 	}
@@ -142,15 +142,15 @@ func (cc *UserController) GetAllUsers(ctx *gin.Context) {
 	reqLimit, _ := strconv.Atoi(limit)
 	offset := (reqPageID - 1) * reqLimit
 
-	countUsersArgs := &db.CountUsersParams{
+	countUsersArgs := db.CountUsersParams{
 		Email:        email,
 		Name:         name,
 		MentorStatus: mentorStatus,
 	}
-	usersSize, err := cc.db.CountUsers(ctx, *countUsersArgs)
+	usersSize, err := cc.db.CountUsers(ctx, countUsersArgs)
 	util.HandleErrorGin(ctx, err)
 
-	listUsersArgs := &db.ListUsersParams{
+	listUsersArgs := db.ListUsersParams{
 		Limit:        int32(reqLimit),
 		Offset:       int32(offset),
 		Email:        email,
@@ -158,7 +158,7 @@ func (cc *UserController) GetAllUsers(ctx *gin.Context) {
 		MentorStatus: mentorStatus,
 	}
 
-	users, err := cc.db.ListUsers(ctx, *listUsersArgs)
+	users, err := cc.db.ListUsers(ctx, listUsersArgs)
 	util.HandleErrorGin(ctx, err)
 
 	response := make([]schemas.UserPlainResponseWithInfo, len(users))
@@ -172,10 +172,10 @@ func (cc *UserController) GetAllUsers(ctx *gin.Context) {
 		})
 
 		response[i] = schemas.UserPlainResponseWithInfo{
-			Uuid:             user.Uuid.String(),
+			Uuid:             util.ConvertPgUUIDToUUID(user.Uuid).String(),
 			Name:             user.Name,
 			Description:      user.Description,
-			CreatedAt:        user.CreatedAt.Format(util.DEFAULT_STRING_LAYOUT),
+			CreatedAt:        user.CreatedAt.Time.Format(util.DEFAULT_STRING_LAYOUT),
 			ImageUrl:         user.ImageUrl,
 			IsMentor:         user.IsMentor,
 			Email:            user.Email,
@@ -188,4 +188,39 @@ func (cc *UserController) GetAllUsers(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, schemas.GetAllUsersResponse{Size: usersSize, Users: response})
+}
+
+// @Summary Get users by ids
+// @Description
+// @Tags user
+// @ID get-users-by-ids
+// @Accept  json
+// @Produce  json
+// @Param request body []string true "query params"
+// @Success 200 {object} []schemas.GetUsersByIDsResponse
+// @Router /users/list-by-ids [get]
+func (cc *UserController) GetUsersByIDs(ctx *gin.Context) {
+	var payload []string
+
+	if err := ctx.ShouldBindJSON(&payload); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	usersPgUUIDs := lo.Map(payload, func(userID string, i int) pgtype.UUID {
+		return pgtype.UUID{Bytes: uuid.MustParse(userID), Valid: true}
+	})
+
+	dbUsers, err := cc.db.GetUsersByIds(ctx, usersPgUUIDs)
+	util.HandleErrorGin(ctx, err)
+
+	response := lo.Map(dbUsers, func(dbUser db.GetUsersByIdsRow, i int) schemas.GetUsersByIDsResponse {
+		return schemas.GetUsersByIDsResponse{
+			UserID:   util.ConvertPgUUIDToUUID(dbUser.Uuid).String(),
+			Name:     dbUser.Name,
+			ImageURL: dbUser.ImageUrl,
+		}
+	})
+
+	ctx.JSON(http.StatusOK, response)
 }

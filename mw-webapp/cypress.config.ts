@@ -1,17 +1,46 @@
 import { defineConfig } from "cypress";
+import dotenv from "dotenv";
 
-export default defineConfig({
+// Load environment variables from .env file
+dotenv.config();
+
+const cypressConfig = defineConfig({
   component: {
+    retries: {
+      // Configure retry attempts for `cypress run`
+      // Default is 0
+      runMode: 1,
+      // Configure retry attempts for `cypress open`
+      // Default is 0
+      openMode: 0,
+    },
     devServer: {
       framework: "react",
       bundler: "vite",
     },
   },
-  
   e2e: {
-    baseUrl: 'http://localhost:5173',
+    retries: {
+      // Configure retry attempts for `cypress run`
+      // Default is 0
+      runMode: 1,
+      // Configure retry attempts for `cypress open`
+      // Default is 0
+      openMode: 0,
+    },
+    baseUrl: "http://localhost:5173",
     setupNodeEvents(on, config) {
       // implement node event listeners here
+
+      config.env = {
+        ...config.env,
+        ...process.env,
+      };
+
+      // Load environment variables from .env file
+      return config;
     },
   },
 });
+
+export default cypressConfig;

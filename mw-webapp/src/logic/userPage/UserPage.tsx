@@ -1,11 +1,11 @@
 import {useState} from "react";
 import {userPersonalDataAccessIds} from "cypress/accessIds/userPersonalDataAccessIds";
+import {userWaysAccessIds} from "cypress/accessIds/userWaysAccessIds";
 import {observer} from "mobx-react-lite";
 import {TrackUserPage} from "src/analytics/userPageAnalytics";
 import {Avatar, AvatarSize} from "src/component/avatar/Avatar";
 import {Button, ButtonType} from "src/component/button/Button";
 import {Checkbox} from "src/component/checkbox/Checkbox";
-import {Confirm} from "src/component/confirm/Confirm";
 import {EditableTextarea} from "src/component/editableTextarea/editableTextarea";
 import {HorizontalContainer} from "src/component/horizontalContainer/HorizontalContainer";
 import {HorizontalGridContainer} from "src/component/horizontalGridContainer/HorizontalGridContainer";
@@ -14,13 +14,14 @@ import {Infotip} from "src/component/infotip/Infotip";
 import {Loader} from "src/component/loader/Loader";
 import {Modal} from "src/component/modal/Modal";
 import {PromptModalContent} from "src/component/modal/PromptModalContent";
-import {displayNotification} from "src/component/notification/displayNotification";
+import {displayNotification, NotificationType} from "src/component/notification/displayNotification";
 import {Tag, TagType} from "src/component/tag/Tag";
 import {HeadingLevel, Title} from "src/component/title/Title";
 import {PositionTooltip} from "src/component/tooltip/PositionTooltip";
 import {Tooltip} from "src/component/tooltip/Tooltip";
 import {VerticalContainer} from "src/component/verticalContainer/VerticalContainer";
 import {WayCollectionCard} from "src/component/wayCollectionCard/WayCollectionCard";
+import {ChatDAL, RoomType} from "src/dataAccessLogic/ChatDAL";
 import {FavoriteUserDAL} from "src/dataAccessLogic/FavoriteUserDAL";
 import {UserDAL} from "src/dataAccessLogic/UserDAL";
 import {UserTagDAL} from "src/dataAccessLogic/UserTagDAL";
@@ -160,7 +161,6 @@ export const UserPage = observer((props: UserPageProps) => {
 
   const {language} = languageStore;
   const {theme} = themeStore;
-  const [isRenameCollectionModalOpen, setIsRenameCollectionModalOpen] = useState(false);
   const [isAddUserTagModalOpen, setIsAddUserTagModalOpen] = useState(false);
   const {userPageOwner, addUserToFavoriteForUser, deleteUserFromFavoriteForUser} = userPageStore;
 
@@ -192,7 +192,10 @@ export const UserPage = observer((props: UserPageProps) => {
   const isPageOwner = !!user && !!userPageOwner && user.uuid === userPageOwner.uuid;
   if (!userPageSettings || !userPageStore.isInitialized) {
     return (
-      <Loader theme={theme} />
+      <Loader
+        theme={theme}
+        isAbsolute
+      />
     );
   }
 
@@ -278,10 +281,10 @@ export const UserPage = observer((props: UserPageProps) => {
 
   if (!currentCollection) {
     return (
-      <>
-        <Loader theme={theme} />
-        No collection
-      </>
+      <Loader
+        theme={theme}
+        isAbsolute
+      />
     );
   }
 
@@ -302,11 +305,23 @@ export const UserPage = observer((props: UserPageProps) => {
       <VerticalContainer className={styles.userInfoBlock}>
         <HorizontalGridContainer className={styles.userMainInfoBlock}>
           <HorizontalContainer className={styles.userAboutBlock}>
-            <Avatar
-              alt={userPageOwner.name}
-              src={userPageOwner.imageUrl}
-              size={AvatarSize.LARGE}
-            />
+            <VerticalContainer className={styles.AvatarWithConnectButton}>
+              <Avatar
+                alt={userPageOwner.name}
+                src={userPageOwner.imageUrl}
+                size={AvatarSize.LARGE}
+              />
+              <Button
+                onClick={async () => {
+                  await ChatDAL.createRoom({
+                    roomType: RoomType.PRIVATE,
+                    userId: userPageOwner.uuid,
+                  });
+                }}
+                buttonType={ButtonType.SECONDARY}
+                value="Write to connect"
+              />
+            </VerticalContainer>
 
             <VerticalContainer className={styles.nameEmailSection}>
               <HorizontalContainer className={styles.nameSection}>
@@ -314,7 +329,12 @@ export const UserPage = observer((props: UserPageProps) => {
                   <Infotip content={LanguageService.user.infotip.userName[language]} />
 
                   <Title
-                    dataCy={userPersonalDataAccessIds.descriptionSection.nameSection}
+                    cy={
+                      {
+                        dataCyTitleContainer: userPersonalDataAccessIds.descriptionSection.nameDisplay,
+                        dataCyInput: userPersonalDataAccessIds.descriptionSection.nameInput,
+                      }
+                    }
                     level={HeadingLevel.h2}
                     text={userPageOwner.name}
                     placeholder={LanguageService.common.emptyMarkdownAction[language]}
@@ -374,7 +394,7 @@ export const UserPage = observer((props: UserPageProps) => {
 
                       displayNotification({
                         text: notificationFavoriteUsers,
-                        type: "info",
+                        type: NotificationType.INFO,
                       });
                     }}
                     buttonType={ButtonType.ICON_BUTTON_WITHOUT_BORDER}
@@ -393,6 +413,12 @@ export const UserPage = observer((props: UserPageProps) => {
                   />
                 </HorizontalContainer>
                 <EditableTextarea
+                  cy={
+                    {
+                      textArea: userPersonalDataAccessIds.descriptionSection.aboutMeMarkdownInput,
+                      trigger: userPersonalDataAccessIds.descriptionSection.aboutMeMarkdownDisplay,
+                    }
+                  }
                   text={userPageOwner.description}
                   onChangeFinish={(description) => updateUser({
                     userToUpdate: {
@@ -483,12 +509,20 @@ export const UserPage = observer((props: UserPageProps) => {
                         }
                         onClick={() => {}}
                         buttonType={ButtonType.ICON_BUTTON}
+                        dataCy={userPersonalDataAccessIds.descriptionSection.addSkillButton}
                       />
                     </Tooltip>
                   }
                   content={
                     <PromptModalContent
+                      cy={
+                        {
+                          dataCyInput: userPersonalDataAccessIds.userSkillsBlock.skillsModalContent.skillInput,
+                          dataCyCreateButton: userPersonalDataAccessIds.userSkillsBlock.skillsModalContent.createSkillButton,
+                        }
+                      }
                       defaultValue=""
+                      title={LanguageService.user.personalInfo.addSkillModalTitle[language]}
                       placeholder={LanguageService.user.personalInfo.addSkillModal[language]}
                       close={() => setIsAddUserTagModalOpen(false)}
                       onOk={async (tagName: string) => {
@@ -496,7 +530,7 @@ export const UserPage = observer((props: UserPageProps) => {
                         if (isSkillDuplicate) {
                           displayNotification({
                             text: `${LanguageService.user.personalInfo.duplicateSkillModal[language]}`,
-                            type: "info",
+                            type: NotificationType.INFO,
                           });
                         } else {
                           const newTag = await UserTagDAL.createUserTag({name: tagName, ownerUuid: user.uuid});
@@ -504,7 +538,7 @@ export const UserPage = observer((props: UserPageProps) => {
                           userPageOwner.addTag(newTag);
                         }
                       }}
-                      okButtonValue={LanguageService.modals.promptModal.okButton[language]}
+                      okButtonValue={LanguageService.user.personalInfo.addSkillModalButton[language]}
                       cancelButtonValue={LanguageService.modals.promptModal.cancelButton[language]}
                     />
                   }
@@ -514,6 +548,12 @@ export const UserPage = observer((props: UserPageProps) => {
             <HorizontalContainer className={styles.userTagsContainer}>
               {userPageOwner?.tags.map(tag => (
                 <Tag
+                  cy={
+                    {
+                      dataCyTag: userPersonalDataAccessIds.userSkillsBlock.skillTag.tag,
+                      dataCyCross: userPersonalDataAccessIds.userSkillsBlock.skillTag.removeTagButton,
+                    }
+                  }
                   tagName={tag.name}
                   key={tag.uuid}
                   isDeletable={isPageOwner}
@@ -595,6 +635,7 @@ export const UserPage = observer((props: UserPageProps) => {
               collectionWaysAmount={userPageOwner.defaultWayCollections.own.ways.length}
               onClick={() => setOpenedTabId(userPageOwner.defaultWayCollections.own.uuid)}
               language={language}
+              dataCy={userWaysAccessIds.wayCollectionButtonsBlock.ownWayCollectionButton}
             />
 
             <WayCollectionCard
@@ -603,6 +644,7 @@ export const UserPage = observer((props: UserPageProps) => {
               collectionWaysAmount={userPageOwner.defaultWayCollections.mentoring.ways.length}
               onClick={() => setOpenedTabId(userPageOwner.defaultWayCollections.mentoring.uuid)}
               language={language}
+              dataCy={userWaysAccessIds.wayCollectionButtonsBlock.mentoringWayCollectionButton}
             />
 
             <WayCollectionCard
@@ -634,6 +676,9 @@ export const UserPage = observer((props: UserPageProps) => {
                 collectionWaysAmount={collection.ways.length}
                 onClick={() => setOpenedTabId(collection.uuid)}
                 language={language}
+                isEditable={true}
+                onTitleEdit={(name) => updateCustomWayCollection({id: openedTabId, name})}
+                onDelete={() => deleteCustomWayCollections(currentCollection.uuid)}
               />
             ))}
 
@@ -649,49 +694,6 @@ export const UserPage = observer((props: UserPageProps) => {
           </HorizontalContainer>
         </VerticalContainer>
       </VerticalContainer>
-
-      {isCustomCollection && isPageOwner && (
-        <HorizontalContainer className={styles.temporalBlock}>
-          <Confirm
-            trigger={
-              <Button
-                value={LanguageService.user.collections.deleteCollection[language]}
-                onClick={() => {}}
-                buttonType={ButtonType.SECONDARY}
-                className={styles.button}
-              />
-            }
-            content={<p>
-              {`${LanguageService.user.collections.deleteCollectionModalQuestion[language]} "${currentCollection.name}" ?`}
-            </p>}
-            onOk={() => deleteCustomWayCollections(currentCollection.uuid)}
-            okText={LanguageService.modals.confirmModal.deleteButton[language]}
-            cancelText={LanguageService.modals.confirmModal.cancelButton[language]}
-          />
-          <Modal
-            isOpen={isRenameCollectionModalOpen}
-            content={
-              <PromptModalContent
-                defaultValue={currentCollection.name}
-                placeholder="Collection name"
-                close={() => setIsRenameCollectionModalOpen(false)}
-                onOk={(name: string) => {
-                  updateCustomWayCollection({id: openedTabId, name});
-                  setIsRenameCollectionModalOpen(false);
-                }}
-                okButtonValue={LanguageService.modals.promptModal.okButton[language]}
-                cancelButtonValue={LanguageService.modals.promptModal.cancelButton[language]}
-              />
-            }
-            trigger={
-              <Button
-                value={LanguageService.user.collections.renameCollection[language]}
-                onClick={() => setIsRenameCollectionModalOpen(true)}
-              />
-            }
-          />
-        </HorizontalContainer>
-      )}
 
       <BaseWaysTable
         key={currentCollection.uuid}

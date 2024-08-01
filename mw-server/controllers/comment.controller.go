@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"context"
-	"database/sql"
 	"net/http"
 	"time"
 
@@ -12,6 +11,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type CommentController struct {
@@ -44,23 +44,23 @@ func (cc *CommentController) CreateComment(ctx *gin.Context) {
 	now := time.Now()
 	args := &db.CreateCommentParams{
 		Description:   payload.Description,
-		OwnerUuid:     uuid.MustParse(payload.OwnerUuid),
-		DayReportUuid: uuid.MustParse(payload.DayReportUuid),
-		UpdatedAt:     now,
-		CreatedAt:     now,
+		OwnerUuid:     pgtype.UUID{Bytes: uuid.MustParse(payload.OwnerUuid), Valid: true},
+		DayReportUuid: pgtype.UUID{Bytes: uuid.MustParse(payload.DayReportUuid), Valid: true},
+		UpdatedAt:     pgtype.Timestamp{Time: now, Valid: true},
+		CreatedAt:     pgtype.Timestamp{Time: now, Valid: true},
 	}
 
 	comment, err := cc.db.CreateComment(ctx, *args)
 	util.HandleErrorGin(ctx, err)
 
 	response := schemas.CommentPopulatedResponse{
-		Uuid:          comment.Uuid.String(),
+		Uuid:          util.ConvertPgUUIDToUUID(comment.Uuid).String(),
 		Description:   comment.Description,
-		OwnerUuid:     comment.OwnerUuid.String(),
+		OwnerUuid:     util.ConvertPgUUIDToUUID(comment.OwnerUuid).String(),
 		OwnerName:     comment.OwnerName,
-		CreatedAt:     comment.CreatedAt.Format(util.DEFAULT_STRING_LAYOUT),
-		UpdatedAt:     comment.UpdatedAt.Format(util.DEFAULT_STRING_LAYOUT),
-		DayReportUuid: comment.DayReportUuid.String(),
+		CreatedAt:     comment.CreatedAt.Time.Format(util.DEFAULT_STRING_LAYOUT),
+		UpdatedAt:     comment.UpdatedAt.Time.Format(util.DEFAULT_STRING_LAYOUT),
+		DayReportUuid: util.ConvertPgUUIDToUUID(comment.DayReportUuid).String(),
 	}
 
 	ctx.JSON(http.StatusOK, response)
@@ -86,11 +86,15 @@ func (cc *CommentController) UpdateComment(ctx *gin.Context) {
 		return
 	}
 
+	var descriptionPg pgtype.Text
+	if payload.Description != nil {
+		descriptionPg = pgtype.Text{String: *payload.Description, Valid: true}
+	}
 	now := time.Now()
 	args := &db.UpdateCommentParams{
-		Uuid:        uuid.MustParse(commentId),
-		Description: sql.NullString{String: payload.Description, Valid: payload.Description != ""},
-		UpdatedAt:   sql.NullTime{Time: now, Valid: true},
+		Uuid:        pgtype.UUID{Bytes: uuid.MustParse(commentId), Valid: true},
+		Description: descriptionPg,
+		UpdatedAt:   pgtype.Timestamp{Time: now, Valid: true},
 	}
 
 	comment, err := cc.db.UpdateComment(ctx, *args)
@@ -112,7 +116,7 @@ func (cc *CommentController) UpdateComment(ctx *gin.Context) {
 func (cc *CommentController) DeleteCommentById(ctx *gin.Context) {
 	commentId := ctx.Param("commentId")
 
-	err := cc.db.DeleteComment(ctx, uuid.MustParse(commentId))
+	err := cc.db.DeleteComment(ctx, pgtype.UUID{Bytes: uuid.MustParse(commentId), Valid: true})
 	util.HandleErrorGin(ctx, err)
 
 	ctx.JSON(http.StatusNoContent, gin.H{"status": "successfully deleted"})

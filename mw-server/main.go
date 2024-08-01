@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"log"
 	"net/http"
@@ -10,8 +9,7 @@ import (
 
 	"mwserver/config"
 	"mwserver/controllers"
-	dbCon "mwserver/db/sqlc"
-	dbConPGX "mwserver/db_pgx/sqlc"
+	dbConn "mwserver/db/sqlc"
 	"mwserver/routes"
 	"mwserver/services"
 
@@ -19,24 +17,28 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/google/generative-ai-go/genai"
 	"github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/lib/pq"
 	ginSwagger "github.com/swaggo/gin-swagger"
+	"google.golang.org/api/option"
 
 	swaggerFiles "github.com/swaggo/files"
 )
 
 var (
-	server  *gin.Engine
-	db      *dbCon.Queries
-	pgxPool *pgxpool.Pool
-	dbPGX   *dbConPGX.Queries
-	ctx     context.Context
+	server       *gin.Engine
+	pgxPool      *pgxpool.Pool
+	db           *dbConn.Queries
+	geminiClient *genai.Client
+	ctx          context.Context
 
 	LimitService services.LimitService
 
-	AIController controllers.AIController
-	AIRoutes     routes.AIRoutes
+	GeminiService services.GeminiService
+
+	GeminiController controllers.GeminiController
+	GeminiRoutes     routes.GeminiRoutes
 
 	AuthController controllers.AuthController
 	AuthRoutes     routes.AuthRoutes
@@ -119,13 +121,7 @@ func init() {
 		fmt.Fprintf(os.Stderr, "Unable to create connection pool: %v\n", err)
 		os.Exit(1)
 	}
-	dbPGX = dbConPGX.New(pgxPool)
-
-	conn, err := sql.Open(config.Env.DbDriver, config.Env.DbSource)
-	if err != nil {
-		log.Fatalf("Could not connect to database: %v", err)
-	}
-	db = dbCon.New(conn)
+	db = dbConn.New(pgxPool)
 
 	fmt.Println("PostgreSql connected successfully...")
 
@@ -134,8 +130,7 @@ func init() {
 
 	// Apply CORS middleware with custom options
 	server.Use(cors.New(cors.Config{
-		// AllowOrigins: []string{"*"},
-		AllowOrigins:     []string{config.Env.WebappBaseUrl},
+		AllowOrigins:     []string{"*"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
 		ExposeHeaders:    []string{"Content-Length"},
@@ -144,13 +139,10 @@ func init() {
 
 	LimitService = *services.NewLimitService(db, ctx)
 
-	AIController = *controllers.NewAIController(ctx)
-	AIRoutes = routes.NewRouteAI(AIController)
-
 	AuthController = *controllers.NewAuthController(db, ctx)
 	AuthRoutes = routes.NewRouteAuth(AuthController)
 
-	WayController = *controllers.NewWayController(db, dbPGX, ctx, &LimitService)
+	WayController = *controllers.NewWayController(db, ctx, &LimitService)
 	WayRoutes = routes.NewRouteWay(WayController)
 
 	UserController = *controllers.NewUserController(db, ctx)
@@ -174,7 +166,7 @@ func init() {
 	FromUserMentoringRequestController = *controllers.NewFromUserMentoringRequestController(db, ctx)
 	FromUserMentoringRequestRoutes = routes.NewRouteFromUserMentoringRequest(FromUserMentoringRequestController)
 
-	JobDoneController = *controllers.NewJobDoneController(db, dbPGX, ctx)
+	JobDoneController = *controllers.NewJobDoneController(db, ctx)
 	JobDoneRoutes = routes.NewRouteJobDone(JobDoneController)
 
 	JobDoneJobTagController = *controllers.NewJobDoneJobTagController(db, ctx)
@@ -217,20 +209,37 @@ func init() {
 	MentorUserWayRoutes = routes.NewRouteMentorUserWay(MentorUserWayController)
 
 	if config.Env.EnvType != "prod" {
-		DevController = *controllers.NewDevController(db, ctx)
+		DevController = *controllers.NewDevController(db, pgxPool, ctx)
 		DevRoutes = routes.NewRouteDev(DevController)
 
 		server.GET("/docs/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
-
+	} else {
+		geminiClient, err = genai.NewClient(ctx, option.WithAPIKey(config.Env.GeminiApiKey))
+		if err != nil {
+			log.Fatalf("Failed to create client: %v", err)
+		}
 	}
+
+	GeminiService = *services.NewGeminiService(ctx, geminiClient)
+
+	GeminiController = *controllers.NewGeminiController(ctx, &GeminiService)
+	GeminiRoutes = routes.NewRouteGemini(GeminiController)
 }
 
-// @title     Masters way API
+// @title     Masters way general API
 // @version 1.0
 // @BasePath  /api
+
+// @Summary Health Check
+// @Description Get the health status of the API
+// @Tags Health
+// @Accept json
+// @Produce json
+// @Success 200 {object} map[string]string
+// @Router /healthcheck [get]
 func main() {
-	defer db.Close()
 	defer pgxPool.Close()
+	defer geminiClient.Close()
 
 	router := server.Group("/api")
 
@@ -238,7 +247,7 @@ func main() {
 		ctx.JSON(http.StatusOK, gin.H{"message": "The way APi is working fine"})
 	})
 
-	AIRoutes.AIRoute(router)
+	GeminiRoutes.GeminiRoute(router)
 	AuthRoutes.AuthRoute(router)
 	WayRoutes.WayRoute(router)
 	UserRoutes.UserRoute(router)

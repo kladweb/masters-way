@@ -1,5 +1,6 @@
 
 import {useNavigate} from "react-router-dom";
+import {userWaysAccessIds} from "cypress/accessIds/userWaysAccessIds";
 import {observer} from "mobx-react-lite";
 import {Button, ButtonType} from "src/component/button/Button";
 import {Confirm} from "src/component/confirm/Confirm";
@@ -150,7 +151,10 @@ export const BaseWaysTable = observer((props: BaseWaysTableProps) => {
   if (!props.ways) {
     return (
       <VerticalContainer className={styles.loaderWrapper}>
-        <Loader theme={theme} />
+        <Loader
+          theme={theme}
+          isAbsolute
+        />
       </VerticalContainer>
     );
   }
@@ -186,6 +190,7 @@ export const BaseWaysTable = observer((props: BaseWaysTableProps) => {
               onClick={() => createWay(user.uuid)}
               buttonType={ButtonType.PRIMARY}
               className={styles.createWayButton}
+              dataCy={userWaysAccessIds.createNewWayButton}
             />
           }
           <HorizontalContainer className={styles.filtersViewBlock}>
@@ -221,6 +226,7 @@ export const BaseWaysTable = observer((props: BaseWaysTableProps) => {
         }).length})`}
         level={HeadingLevel.h2}
         placeholder=""
+        cy={{dataCyTitleContainer: userWaysAccessIds.wayStatusTitle}}
       />
 
       <VerticalContainer className={styles.waysContent}>
@@ -245,6 +251,7 @@ export const BaseWaysTable = observer((props: BaseWaysTableProps) => {
                 <WayCard
                   key={way.uuid}
                   wayPreview={way}
+                  dataCy={userWaysAccessIds.wayCollectionButtonsBlock.wayLink(way.name)}
                 />
               );
             })

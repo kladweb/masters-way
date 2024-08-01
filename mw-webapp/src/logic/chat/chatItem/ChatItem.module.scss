@@ -1,0 +1,26 @@
+@import "src/styles/variables";
+
+.chatItemWrapper {
+  cursor: pointer;
+}
+
+.chatItem {
+  max-width: $minWidthBlock;
+  overflow-x: hidden;
+  text-overflow: ellipsis;
+}
+
+.userStatusBlock {
+  align-items: center;
+}
+
+.userStatusIndicator {
+  width: 10px;
+  height: 10px;
+  border-radius: $tertiaryBorderRadius;
+  background-color: var(--dangerColor);
+}
+
+.online {
+  background-color: var(--activeColor);
+}

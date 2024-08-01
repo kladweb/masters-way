@@ -5,18 +5,22 @@ import homePageContent from "src/dictionary/HomePageContent.json";
 import {Theme} from "src/globalStore/ThemeStore";
 import sideBarContent from "src/dictionary/Sidebar.json";
 import testUserData from "cypress/fixtures/testUserDataFixture.json";
-import {userPersonalSelectors} from "cypress/scopesSelectors/userPersonalDataSelectors";
+import { userPersonalSelectors } from "cypress/scopesSelectors/userPersonalDataSelectors";
+import allWayData from "cypress/fixtures/allWaysFixture.json";
 
-afterEach(() => {
-    cy.clearAllStorage();
-});
+const apiUrl = Cypress.env('API_BASE_PATH');
 
 describe('NoAuth Header scope tests', () => {
 
     beforeEach(() => {
+      cy.request('GET', `${apiUrl}/dev/reset-db`);
       cy.visit('/');
     });
   
+    afterEach(() => {
+        cy.clearAllStorage();
+    });
+
     it('NoAuth_Header_MasterWayIcon', () => {
         headerSelectors.getLogo().click();
 
@@ -24,13 +28,15 @@ describe('NoAuth Header scope tests', () => {
         homeSelectors.welcomeBlock.getTitle().should('contain', homePageContent.title.en);
     });
 
-    it('NoAuth_Header_LightThemeSwitchIcon', () => {
+  it('NoAuth_Header_LightThemeSwitchIcon', () => {
+        cy.visit(`/${allWayData.endpoint}`);
         headerSelectors.settings.getThemeSwitcher().click();
 
         cy.checkThemeColors(Theme.LIGHT);
     });
 
-    it('NoAuth_Header_DarkThemeSwitchIcon', () => {
+  it('NoAuth_Header_DarkThemeSwitchIcon', () => {
+        cy.visit(`/${allWayData.endpoint}`);
         headerSelectors.settings.getThemeSwitcher().click();
         headerSelectors.settings.getThemeSwitcher().click();
 
@@ -77,13 +83,18 @@ describe('NoAuth Header scope tests', () => {
 describe('IsAuth Header scope tests', () => {
 
     beforeEach(() => {
+        cy.request('GET', `${apiUrl}/dev/reset-db`);
         cy.visit(testUserData.userLoginLink);  
+    });
+
+    afterEach(() => {
+        cy.clearAllStorage();
     });
 
     it('IsAuth_Header_UserNameLink', () => {
         headerSelectors.getAvatar().click();
 
-        cy.url().should('match', /\/user\/[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}$/);
+        cy.url().should('match', new RegExp(`\\/user\\/${testUserData.urlPattern}`));
         userPersonalSelectors.descriptionSection.getName().should('have.text', testUserData.name);
     });
 

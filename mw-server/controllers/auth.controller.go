@@ -12,6 +12,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 	"golang.org/x/oauth2"
 	oauthGoogle "google.golang.org/api/oauth2/v2"
 	"google.golang.org/api/option"
@@ -60,7 +61,7 @@ func (cc *AuthController) GetAuthCallbackFunction(ctx *gin.Context) {
 		Name:        userInfo.Name,
 		Email:       userInfo.Email,
 		Description: "",
-		CreatedAt:   now,
+		CreatedAt:   pgtype.Timestamp{Time: now, Valid: true},
 		ImageUrl:    userInfo.Picture,
 		IsMentor:    false,
 	}
@@ -87,7 +88,7 @@ func (cc *AuthController) GetAuthCallbackFunction(ctx *gin.Context) {
 func (cc *AuthController) BeginAuth(ctx *gin.Context) {
 	url := auth.GoogleOAuthConfig.AuthCodeURL(auth.OauthStateString, oauth2.AccessTypeOffline)
 	ctx.Redirect(http.StatusTemporaryRedirect, url)
-	
+
 	ctx.JSON(http.StatusOK, "ok")
 }
 
@@ -127,7 +128,7 @@ func (cc *AuthController) GetUserTokenByEmail(ctx *gin.Context) {
 		Name:        userEmail,
 		Email:       userEmail,
 		Description: "",
-		CreatedAt:   now,
+		CreatedAt:   pgtype.Timestamp{Time: now, Valid: true},
 		ImageUrl:    "",
 		IsMentor:    false,
 	}

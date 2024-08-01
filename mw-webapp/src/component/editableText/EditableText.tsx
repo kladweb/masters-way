@@ -1,19 +1,11 @@
 import {HTMLInputTypeAttribute, useState} from "react";
 import clsx from "clsx";
-import {FormatterInputValue} from "src/component/input/formatters";
+import {getFormattedValue} from "src/component/editableText/getFormattedValue";
 import {Input} from "src/component/input/Input";
+import {displayNotification, NotificationType} from "src/component/notification/displayNotification";
 import {Text} from "src/component/text/Text";
 import {KeySymbols} from "src/utils/KeySymbols";
 import styles from "src/component/editableText/EditableText.module.scss";
-
-/**
- * Get formatted value
- */
-export const getFormattedValue = (incomingValue: string | number) => {
-  return typeof incomingValue === "number"
-    ? FormatterInputValue.withNoFirstZero(incomingValue)
-    : FormatterInputValue.defaultStringFormatter(incomingValue);
-};
 
 /**
  * Data attributes for cypress testing
@@ -88,6 +80,16 @@ interface EditableTextProps<T> {
    */
   placeholder: string;
 
+  /**
+   * Minimum symbols amount for text
+   */
+  minLength?: number;
+
+  /**
+   * Maximum symbols amount for text
+   */
+  maxLength?: number;
+
 }
 
 /**
@@ -118,8 +120,25 @@ export const EditableText = <T extends string | number>(props: EditableTextProps
   /**
    * Update value
    */
-  const updateValue = (updatedValue: string | number) => {
-    setValue(updatedValue as T);
+  const updateValue = (updatedValue: T) => {
+    const isExceedingMinLength = typeof updatedValue === "string" &&
+    props.minLength && updatedValue.length < props.minLength;
+
+    const isExceedingMaxLength = typeof updatedValue === "string" &&
+    props.maxLength && updatedValue.length > props.maxLength;
+
+    const isInvalidTextLength = isExceedingMinLength || isExceedingMaxLength;
+
+    const notificationText = isExceedingMinLength
+      ? "Label should include at least one character"
+      : "Label should not exceed 30 characters";
+
+    isInvalidTextLength
+      ? displayNotification({
+        text: notificationText,
+        type: NotificationType.INFO,
+      })
+      : setValue(updatedValue);
   };
 
   /**

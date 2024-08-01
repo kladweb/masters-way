@@ -1,0 +1,61 @@
+@import "src/styles/variables";
+
+$labelMinWidth: 150px;
+$descriptionMinWidth: 300px;
+$descriptionMinWidthMobile: 150px;
+
+.modalContainer {
+  gap: $gapBig;
+}
+
+.labelsContainer {
+  justify-content: space-between;
+  gap: $gapMedium;
+}
+
+.labels {
+  width: 100%;
+  cursor: pointer;
+}
+
+.labelsButtons {
+  justify-content: flex-end;
+  gap: $gapMedium;
+}
+
+.labelContent {
+  align-items: center;
+  justify-content: space-between;
+  gap: $gapMedium;
+}
+
+.labelContainer {
+  min-width: $labelMinWidth;
+
+  @media (max-width: $mediaWidthMobileMedium) {
+    flex: 1 1 100%;
+  }
+}
+
+.label {
+  max-width: $labelMinWidth;
+}
+
+.labelDescription {
+  min-width: $descriptionMinWidth;
+  flex: 1 1 100%;
+  flex-wrap: wrap;
+
+  @media (max-width: $mediaWidthMobileBig) {
+    min-width: $descriptionMinWidthMobile;
+  }
+
+  @media (max-width: $mediaWidthMobileMedium) {
+    display: none;
+  }
+
+  p {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}

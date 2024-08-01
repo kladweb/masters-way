@@ -1,10 +1,5 @@
 basePath: /api
 definitions:
-  schemas.AIResponse:
-    properties:
-      answer:
-        type: string
-    type: object
   schemas.AddWayToCompositeWayPayload:
     properties:
       childWayUuid:
@@ -254,10 +249,31 @@ definitions:
     - name
     - ownerUuid
     type: object
-  schemas.CreateWay:
+  schemas.CreateWayCollectionPayload:
+    properties:
+      name:
+        type: string
+      ownerUuid:
+        type: string
+    required:
+    - name
+    - ownerUuid
+    type: object
+  schemas.CreateWayCollectionWay:
+    properties:
+      wayCollectionUuid:
+        type: string
+      wayUuid:
+        type: string
+    required:
+    - wayCollectionUuid
+    - wayUuid
+    type: object
+  schemas.CreateWayPayload:
     properties:
       copiedFromWayUuid:
         type: string
+        x-nullable: true
       estimationTime:
         type: integer
       goalDescription:
@@ -278,26 +294,6 @@ definitions:
     - isPrivate
     - name
     - ownerUuid
-    type: object
-  schemas.CreateWayCollectionPayload:
-    properties:
-      name:
-        type: string
-      ownerUuid:
-        type: string
-    required:
-    - name
-    - ownerUuid
-    type: object
-  schemas.CreateWayCollectionWay:
-    properties:
-      wayCollectionUuid:
-        type: string
-      wayUuid:
-        type: string
-    required:
-    - wayCollectionUuid
-    - wayUuid
     type: object
   schemas.CreateWayTagPayload:
     properties:
@@ -374,7 +370,7 @@ definitions:
         type: string
       metrics:
         items:
-          $ref: '#/definitions/schemas.MetricResponse'
+          type: string
         type: array
       wayName:
         type: string
@@ -406,6 +402,19 @@ definitions:
     required:
     - size
     - ways
+    type: object
+  schemas.GetUsersByIDsResponse:
+    properties:
+      imageUrl:
+        type: string
+      name:
+        type: string
+      userId:
+        type: string
+    required:
+    - imageUrl
+    - name
+    - userId
     type: object
   schemas.JobDonePopulatedResponse:
     properties:
@@ -953,33 +962,9 @@ definitions:
     type: object
 info:
   contact: {}
-  title: Masters way API
+  title: Masters way general API
   version: "1.0"
 paths:
-  /ai/metrics:
-    post:
-      consumes:
-      - application/json
-      description: This endpoint uses AI to generate metrics by analyzing the provided
-        goals
-      operationId: generate-metrics
-      parameters:
-      - description: Request payload
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/schemas.GenerateMetricsPayload'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/schemas.AIResponse'
-      summary: Generate AI-based metrics
-      tags:
-      - AI
   /auth/{provider}:
     get:
       consumes:
@@ -1396,6 +1381,49 @@ paths:
       summary: Delete fromUserMentoringRequest by UUID
       tags:
       - fromUserMentoringRequest
+  /gemini/metrics:
+    post:
+      consumes:
+      - application/json
+      description: This endpoint uses Gemini to generate metrics by analyzing the
+        provided goals.
+      operationId: generate-metrics
+      parameters:
+      - description: Request payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.GenerateMetricsPayload'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of generated metrics
+          schema:
+            items:
+              type: string
+            type: array
+      summary: Generate metrics using Gemini
+      tags:
+      - gemini
+  /healthcheck:
+    get:
+      consumes:
+      - application/json
+      description: Get the health status of the API
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Health Check
+      tags:
+      - Health
   /jobDoneJobTags:
     post:
       consumes:
@@ -2086,6 +2114,32 @@ paths:
       summary: Update user by UUID
       tags:
       - user
+  /users/list-by-ids:
+    get:
+      consumes:
+      - application/json
+      operationId: get-users-by-ids
+      parameters:
+      - description: query params
+        in: body
+        name: request
+        required: true
+        schema:
+          items:
+            type: string
+          type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/schemas.GetUsersByIDsResponse'
+            type: array
+      summary: Get users by ids
+      tags:
+      - user
   /wayCollectionWays:
     post:
       consumes:
@@ -2282,7 +2336,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/schemas.CreateWay'
+          $ref: '#/definitions/schemas.CreateWayPayload'
       produces:
       - application/json
       responses:

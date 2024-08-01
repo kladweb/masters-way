@@ -66,7 +66,13 @@ interface ModalProps {
   /**
    * ModalContent className
    */
-  className?: string;
+  contentClassName?: string;
+
+  /**
+   * If true then trigger has width with value fit-content
+   * @default true
+   */
+  isFitContent?: boolean;
 
   /**
    * Data attributes for cypress testing
@@ -86,12 +92,15 @@ export const Modal = (props: ModalProps) => {
       open={isOpen}
       onOpenChange={setIsOpen}
     >
-      <ModalTrigger dataCyTrigger={props.cy?.dataCyTrigger}>
+      <ModalTrigger
+        isFitContent={props.isFitContent}
+        dataCyTrigger={props.cy?.dataCyTrigger}
+      >
         {props.trigger}
       </ModalTrigger>
       <ModalContent
         dataCyContent={props.cy?.dataCyContent}
-        className={props.className}
+        className={props.contentClassName}
       >
         {props.content}
       </ModalContent>

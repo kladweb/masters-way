@@ -15,41 +15,6 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/ai/metrics": {
-            "post": {
-                "description": "This endpoint uses AI to generate metrics by analyzing the provided goals",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "AI"
-                ],
-                "summary": "Generate AI-based metrics",
-                "operationId": "generate-metrics",
-                "parameters": [
-                    {
-                        "description": "Request payload",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/schemas.GenerateMetricsPayload"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/schemas.AIResponse"
-                        }
-                    }
-                }
-            }
-        },
         "/auth/current": {
             "get": {
                 "consumes": [
@@ -679,6 +644,70 @@ const docTemplate = `{
                 "responses": {
                     "200": {
                         "description": "OK"
+                    }
+                }
+            }
+        },
+        "/gemini/metrics": {
+            "post": {
+                "description": "This endpoint uses Gemini to generate metrics by analyzing the provided goals.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "gemini"
+                ],
+                "summary": "Generate metrics using Gemini",
+                "operationId": "generate-metrics",
+                "parameters": [
+                    {
+                        "description": "Request payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/schemas.GenerateMetricsPayload"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of generated metrics",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/healthcheck": {
+            "get": {
+                "description": "Get the health status of the API",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Health"
+                ],
+                "summary": "Health Check",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
                     }
                 }
             }
@@ -1662,6 +1691,46 @@ const docTemplate = `{
                 }
             }
         },
+        "/users/list-by-ids": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user"
+                ],
+                "summary": "Get users by ids",
+                "operationId": "get-users-by-ids",
+                "parameters": [
+                    {
+                        "description": "query params",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/schemas.GetUsersByIDsResponse"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/users/{userId}": {
             "get": {
                 "consumes": [
@@ -2034,7 +2103,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/schemas.CreateWay"
+                            "$ref": "#/definitions/schemas.CreateWayPayload"
                         }
                     }
                 ],
@@ -2148,14 +2217,6 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "schemas.AIResponse": {
-            "type": "object",
-            "properties": {
-                "answer": {
-                    "type": "string"
-                }
-            }
-        },
         "schemas.AddWayToCompositeWayPayload": {
             "type": "object",
             "required": [
@@ -2520,41 +2581,6 @@ const docTemplate = `{
                 }
             }
         },
-        "schemas.CreateWay": {
-            "type": "object",
-            "required": [
-                "copiedFromWayUuid",
-                "estimationTime",
-                "goalDescription",
-                "isCompleted",
-                "isPrivate",
-                "name",
-                "ownerUuid"
-            ],
-            "properties": {
-                "copiedFromWayUuid": {
-                    "type": "string"
-                },
-                "estimationTime": {
-                    "type": "integer"
-                },
-                "goalDescription": {
-                    "type": "string"
-                },
-                "isCompleted": {
-                    "type": "boolean"
-                },
-                "isPrivate": {
-                    "type": "boolean"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "ownerUuid": {
-                    "type": "string"
-                }
-            }
-        },
         "schemas.CreateWayCollectionPayload": {
             "type": "object",
             "required": [
@@ -2581,6 +2607,42 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "wayUuid": {
+                    "type": "string"
+                }
+            }
+        },
+        "schemas.CreateWayPayload": {
+            "type": "object",
+            "required": [
+                "copiedFromWayUuid",
+                "estimationTime",
+                "goalDescription",
+                "isCompleted",
+                "isPrivate",
+                "name",
+                "ownerUuid"
+            ],
+            "properties": {
+                "copiedFromWayUuid": {
+                    "type": "string",
+                    "x-nullable": true
+                },
+                "estimationTime": {
+                    "type": "integer"
+                },
+                "goalDescription": {
+                    "type": "string"
+                },
+                "isCompleted": {
+                    "type": "boolean"
+                },
+                "isPrivate": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "ownerUuid": {
                     "type": "string"
                 }
             }
@@ -2699,7 +2761,7 @@ const docTemplate = `{
                 "metrics": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/schemas.MetricResponse"
+                        "type": "string"
                     }
                 },
                 "wayName": {
@@ -2740,6 +2802,25 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/schemas.WayPlainResponse"
                     }
+                }
+            }
+        },
+        "schemas.GetUsersByIDsResponse": {
+            "type": "object",
+            "required": [
+                "imageUrl",
+                "name",
+                "userId"
+            ],
+            "properties": {
+                "imageUrl": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "userId": {
+                    "type": "string"
                 }
             }
         },
@@ -3525,7 +3606,7 @@ var SwaggerInfo = &swag.Spec{
 	Host:             "",
 	BasePath:         "/api",
 	Schemes:          []string{},
-	Title:            "Masters way API",
+	Title:            "Masters way general API",
 	Description:      "",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,

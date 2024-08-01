@@ -1,5 +1,6 @@
 import {ForwardedRef, forwardRef, PropsWithChildren} from "react";
 import {Trigger as DialogTrigger} from "@radix-ui/react-dialog";
+import clsx from "clsx";
 import styles from "src/component/modal/ModalTrigger/ModalTrigger.module.scss";
 
 /**
@@ -11,6 +12,12 @@ interface ModalTriggerProps {
    * Data attribute for cypress testing
    */
   dataCyTrigger?: string;
+
+  /**
+   * If true then trigger has width with value fit-content
+   * @default true
+   */
+  isFitContent?: boolean;
 
 }
 
@@ -27,7 +34,7 @@ export const ModalTrigger = forwardRef((props: PropsWithChildren<ModalTriggerPro
         ref={ref}
         role="button"
         data-cy={props.dataCyTrigger}
-        className={styles.wrapperTrigger}
+        className={clsx(props.isFitContent && styles.wrapperTrigger)}
       >
         {props.children}
       </div>

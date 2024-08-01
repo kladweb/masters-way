@@ -7,7 +7,6 @@ import (
 )
 
 type Config struct {
-	DbDriver          string `mapstructure:"DB_DRIVER"`
 	DbSource          string `mapstructure:"DB_SOURCE"`
 	PostgresUser      string `mapstructure:"POSTGRES_USER"`
 	PostgresPassword  string `mapstructure:"POSTGRES_PASSWORD"`
@@ -21,6 +20,7 @@ type Config struct {
 	WebappBaseUrl     string `mapstructure:"WEBAPP_BASE_URL"`
 	Domain            string `mapstructure:"WEBAPP_DOMAIN"`
 	GeminiApiKey      string `mapstructure:"GEMINI_API_KEY"`
+	GeminiModel       string `mapstructure:"GEMINI_MODEL"`
 }
 
 func LoadConfig(path string) (config Config, err error) {

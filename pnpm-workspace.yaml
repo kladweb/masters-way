@@ -2,3 +2,6 @@ packages:
   - 'mw-webapp'
   - 'mw-server'
   - 'mw-mobile'
+  - 'mw-chat'
+  - 'mw-chat-bff'
+  - 'mw-chat-websocket'

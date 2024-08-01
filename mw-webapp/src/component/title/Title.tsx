@@ -2,7 +2,7 @@ import {useEffect, useState} from "react";
 import {Heading} from "@radix-ui/themes";
 import clsx from "clsx";
 import {Input} from "src/component/input/Input";
-import {displayNotification} from "src/component/notification/displayNotification";
+import {displayNotification, NotificationType} from "src/component/notification/displayNotification";
 import {KeySymbols} from "src/utils/KeySymbols";
 import styles from "src/component/title/Title.module.scss";
 
@@ -16,6 +16,23 @@ export enum HeadingLevel {
   h4 = "h4",
   h5 = "h5",
   h6 = "h6",
+}
+
+/**
+ * Data attributes for cypress testing
+ */
+interface Cy {
+
+  /**
+   * Data attribute for cypress testing
+   */
+  dataCyInput?: string;
+
+  /**
+   * Data attribute for cypress testing
+   */
+  dataCyTitleContainer?: string;
+
 }
 
 /**
@@ -62,7 +79,7 @@ interface TitleProps {
   /**
    * Data attribute for cypress testing
    */
-  dataCy?: string;
+  cy?: Cy;
 
   /**
    * Showed if value is an empty string
@@ -113,7 +130,7 @@ export const Title = (props: TitleProps) => {
     props.minLength && value.length < props.minLength
       ? displayNotification({
         text: "Name should include at least one character",
-        type: "info",
+        type: NotificationType.INFO,
       })
       : setText(value);
   };
@@ -126,7 +143,7 @@ export const Title = (props: TitleProps) => {
       onBlur={handleChangeFinish}
       onKeyDown={handleEnter}
       className={clsx(styles.editableText, props.className)}
-      data-cy={props.dataCy}
+      data-cy={props.cy?.dataCyTitleContainer}
     >
       {isEditing
         ? (
@@ -135,6 +152,7 @@ export const Title = (props: TitleProps) => {
             value={text}
             autoFocus={true}
             onChange={getValidValue}
+            dataCy={props.cy?.dataCyInput}
           />
         )
         : (

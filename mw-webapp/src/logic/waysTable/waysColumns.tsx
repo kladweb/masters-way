@@ -1,5 +1,6 @@
 import {createColumnHelper} from "@tanstack/react-table";
 import clsx from "clsx";
+import {allWaysAccessIds} from "cypress/accessIds/allWaysAccessIds";
 import {Avatar, AvatarSize} from "src/component/avatar/Avatar";
 import {HorizontalContainer} from "src/component/horizontalContainer/HorizontalContainer";
 import {Link} from "src/component/link/Link";
@@ -116,7 +117,7 @@ export const getWaysColumns = (language: Language) => [
       });
 
       return (
-        <div className={clsx(
+        <VerticalContainer className={clsx(
           styles.cellWrapper,
           styles.status,
           (row.original.childrenUuids.length !== 0) && styles.compositeWay,
@@ -128,7 +129,7 @@ export const getWaysColumns = (language: Language) => [
             value={row.original.metricsDone}
             max={row.original.metricsTotal}
           />
-        </div>
+        </VerticalContainer>
       );
     },
   }),
@@ -150,13 +151,16 @@ export const getWaysColumns = (language: Language) => [
      * Cell with clickable way name that leads to way page
      */
     cell: ({row}) => (
-      <div className={clsx(
+      <VerticalContainer className={clsx(
         styles.cellWrapper,
         (row.original.childrenUuids.length !== 0) && styles.compositeWay,
         (row.original.status === WayStatus.abandoned) && styles.abandonedWay,
       )}
       >
-        <Link path={pages.way.getPath({uuid: row.original.uuid})}>
+        <Link
+          path={pages.way.getPath({uuid: row.original.uuid})}
+          dataCy={allWaysAccessIds.allWaysTable.wayLink(row.original.name)}
+        >
           {row.original.name}
         </Link>
         <Tooltip
@@ -167,7 +171,7 @@ export const getWaysColumns = (language: Language) => [
             {renderMarkdown(row.original.goalDescription)}
           </div>
         </Tooltip>
-      </div>
+      </VerticalContainer>
     ),
   }),
   columnHelper.accessor("owner", {
@@ -203,7 +207,10 @@ export const getWaysColumns = (language: Language) => [
             size={AvatarSize.MEDIUM}
           />
           <VerticalContainer>
-            <Link path={pages.user.getPath({uuid: row.original.owner.uuid})}>
+            <Link
+              path={pages.user.getPath({uuid: row.original.owner.uuid})}
+              dataCy={allWaysAccessIds.allWaysTable.ownerLink(row.original.owner.name)}
+            >
               {row.original.owner.name}
             </Link>
             {row.original.owner.email}
@@ -252,7 +259,10 @@ export const getWaysColumns = (language: Language) => [
                 content={mentor.name}
                 position={PositionTooltip.LEFT}
               >
-                <Link path={pages.user.getPath({uuid: mentor.uuid})}>
+                <Link
+                  path={pages.user.getPath({uuid: mentor.uuid})}
+                  dataCy={allWaysAccessIds.allWaysTable.mentorLink(mentor.name)}
+                >
                   {mentor.name}
                 </Link>
               </Tooltip>

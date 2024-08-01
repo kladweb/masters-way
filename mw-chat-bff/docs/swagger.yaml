@@ -1,0 +1,326 @@
+definitions:
+  schemas.CreateMessagePayload:
+    properties:
+      message:
+        type: string
+    required:
+    - message
+    type: object
+  schemas.CreateRoomPayload:
+    properties:
+      name:
+        type: string
+        x-nullable: true
+      roomType:
+        type: string
+      userId:
+        type: string
+        x-nullable: true
+    required:
+    - roomType
+    type: object
+  schemas.GetChatPreviewResponse:
+    properties:
+      unreadMessagesAmount:
+        type: integer
+    required:
+    - unreadMessagesAmount
+    type: object
+  schemas.GetRoomsResponse:
+    properties:
+      rooms:
+        items:
+          $ref: '#/definitions/schemas.RoomPreviewResponse'
+        type: array
+      size:
+        type: integer
+    required:
+    - rooms
+    - size
+    type: object
+  schemas.MessageReader:
+    properties:
+      ownerImageUrl:
+        type: string
+      ownerName:
+        type: string
+        x-nullable: true
+      readDate:
+        type: string
+      userId:
+        type: string
+    required:
+    - ownerImageUrl
+    - ownerName
+    - readDate
+    - userId
+    type: object
+  schemas.MessageResponse:
+    properties:
+      message:
+        type: string
+      messageReaders:
+        items:
+          $ref: '#/definitions/schemas.MessageReader'
+        type: array
+      ownerId:
+        type: string
+      ownerImageUrl:
+        type: string
+      ownerName:
+        type: string
+        x-nullable: true
+    required:
+    - message
+    - messageReaders
+    - ownerId
+    - ownerImageUrl
+    - ownerName
+    type: object
+  schemas.RoomPopulatedResponse:
+    properties:
+      isBlocked:
+        type: boolean
+      messages:
+        items:
+          $ref: '#/definitions/schemas.MessageResponse'
+        type: array
+      name:
+        type: string
+      roomId:
+        type: string
+      roomType:
+        type: string
+      users:
+        items:
+          $ref: '#/definitions/schemas.UserResponse'
+        type: array
+    required:
+    - isBlocked
+    - messages
+    - name
+    - roomId
+    - roomType
+    - users
+    type: object
+  schemas.RoomPreviewResponse:
+    properties:
+      isBlocked:
+        type: boolean
+      name:
+        type: string
+      roomId:
+        type: string
+      roomType:
+        type: string
+      users:
+        items:
+          $ref: '#/definitions/schemas.UserResponse'
+        type: array
+    required:
+    - isBlocked
+    - name
+    - roomId
+    - roomType
+    - users
+    type: object
+  schemas.UserResponse:
+    properties:
+      imageUrl:
+        type: string
+      name:
+        type: string
+      role:
+        type: string
+      userId:
+        type: string
+    required:
+    - imageUrl
+    - name
+    - role
+    - userId
+    type: object
+info:
+  contact: {}
+paths:
+  /rooms:
+    post:
+      consumes:
+      - application/json
+      operationId: create-room
+      parameters:
+      - description: query params
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.CreateRoomPayload'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/schemas.RoomPopulatedResponse'
+      summary: Create room for user
+      tags:
+      - room
+  /rooms/{roomId}:
+    get:
+      consumes:
+      - application/json
+      operationId: get-room-by-id
+      parameters:
+      - description: room Id
+        in: path
+        name: roomId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/schemas.RoomPopulatedResponse'
+      summary: Get room by id
+      tags:
+      - room
+    patch:
+      consumes:
+      - application/json
+      operationId: update-room
+      parameters:
+      - description: room Id
+        in: path
+        name: roomId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/schemas.RoomPopulatedResponse'
+      summary: Update room
+      tags:
+      - room
+  /rooms/{roomId}/messages:
+    post:
+      consumes:
+      - application/json
+      operationId: create-message-in-room
+      parameters:
+      - description: query params
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.CreateMessagePayload'
+      - description: room Id
+        in: path
+        name: roomId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/schemas.MessageResponse'
+      summary: Create message in room
+      tags:
+      - room
+  /rooms/{roomId}/users/{userId}:
+    delete:
+      consumes:
+      - application/json
+      operationId: delete-user-from-room
+      parameters:
+      - description: room Id
+        in: path
+        name: roomId
+        required: true
+        type: string
+      - description: user Id to delete
+        in: path
+        name: userId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/schemas.RoomPopulatedResponse'
+      summary: Delete user from room
+      tags:
+      - room
+    post:
+      consumes:
+      - application/json
+      operationId: add-user-to-room
+      parameters:
+      - description: room Id
+        in: path
+        name: roomId
+        required: true
+        type: string
+      - description: user Id to delete
+        in: path
+        name: userId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/schemas.RoomPopulatedResponse'
+      summary: Add user to room
+      tags:
+      - room
+  /rooms/list/{roomType}:
+    get:
+      consumes:
+      - application/json
+      operationId: get-rooms
+      parameters:
+      - description: 'room type: private | group'
+        enum:
+        - private
+        - group
+        in: path
+        name: roomType
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/schemas.GetRoomsResponse'
+      summary: Get rooms for user
+      tags:
+      - room
+  /rooms/preview:
+    get:
+      consumes:
+      - application/json
+      operationId: get-chat preview
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/schemas.GetChatPreviewResponse'
+      summary: Get chat preview
+      tags:
+      - room
+swagger: "2.0"
